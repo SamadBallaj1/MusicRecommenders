@@ -40,13 +40,52 @@ class Recommender:
     def __init__(self, songs: List[Song]):
         self.songs = songs
 
+    def _score(self, user: UserProfile, song: Song) -> Tuple[float, List[str]]:
+        """Scores a Song object against a UserProfile."""
+        score = 0.0
+        reasons = []
+
+        if song.genre.lower() == user.favorite_genre.lower():
+            score += 2.0
+            reasons.append("genre match (+2.0)")
+
+        if song.mood.lower() == user.favorite_mood.lower():
+            score += 1.5
+            reasons.append("mood match (+1.5)")
+
+        energy_score = round(1.0 - abs(user.target_energy - song.energy), 2)
+        score += energy_score
+        reasons.append(f"energy closeness (+{energy_score})")
+
+        dance_score = round(0.5 * (1.0 - abs(0.7 - song.danceability)), 2)
+        score += dance_score
+        reasons.append(f"danceability closeness (+{dance_score})")
+
+        val_score = round(0.5 * (1.0 - abs(0.7 - song.valence)), 2)
+        score += val_score
+        reasons.append(f"valence closeness (+{val_score})")
+
+        if user.likes_acoustic and song.acousticness > 0.6:
+            score += 0.5
+            reasons.append("acoustic preference (+0.5)")
+
+        pop_score = round(0.3 * (song.popularity / 100), 2)
+        score += pop_score
+        reasons.append(f"popularity bonus (+{pop_score})")
+
+        score = round(score, 2)
+        return (score, reasons)
+
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        """Returns top k songs sorted by score for the given user."""
+        scored = [(song, self._score(user, song)[0]) for song in self.songs]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [song for song, _ in scored[:k]]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
-        # TODO: Implement explanation logic
-        return "Explanation placeholder"
+        """Explains why a song was recommended for the given user."""
+        _, reasons = self._score(user, song)
+        return ", ".join(reasons)
 
 def load_songs(csv_path: str) -> List[Dict]:
     """Loads songs from a CSV file and converts numeric fields."""
