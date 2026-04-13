@@ -1,111 +1,50 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: Music Recommender Simulation
 
-## 1. Model Name  
+## 1. Model Name
 
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+**VibeMatch 1.0**
 
----
+## 2. Intended Use
 
-## 2. Intended Use  
+Suggests songs from a small catalog based on a user's genre, mood, and energy preferences. Built for classroom exploration, not real users.
 
-Describe what your recommender is designed to do and who it is for. 
+## 3. How the Model Works
 
-Prompts:  
+Each song gets scored against the user's preferences. Genre match gives +2.0, mood match +1.5, energy closeness up to +1.0, and smaller bonuses for danceability, valence, acousticness, and popularity. All points add up to a final score, songs get sorted, and the top ones are recommended. Each result includes an explanation like "genre match (+2.0), energy closeness (+0.98)".
 
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+There are also different ranking modes (genre-first, mood-first, energy-focused) that shift how much each feature matters.
 
----
+## 4. Data
 
-## 3. How the Model Works  
+20 songs, 15 attributes each. Genres: pop, lofi, rock, ambient, jazz, synthwave, indie pop, hip-hop, r&b, country, classical, edm, latin, metal, folk. I expanded the original 10-song starter and added popularity, release decade, mood tags, instrumentalness, and liveness.
 
-Explain your scoring approach in simple language.  
+The dataset leans toward pop and lofi. Classical, folk, and country only have one song each.
 
-Prompts:  
+## 5. Strengths
 
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
+- Works well for popular genres (pop, lofi, rock)
+- Explanations show exactly why each song was picked
+- Multiple ranking modes let you explore how weights change results
+- Diversity penalty prevents the same artist dominating results
 
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+## 6. Limitations and Bias
 
----
+- Genre matching is exact — "indie pop" and "pop" are treated as different
+- Dataset is small and unbalanced, so pop fans get better results than classical fans
+- No learning from user behavior (listens, skips)
+- Popularity bonus slightly favors mainstream songs over niche ones
 
-## 4. Data  
+## 7. Evaluation
 
-Describe the dataset the model uses.  
+Tested 3 profiles: Pop/Happy got pop songs on top, Lofi/Chill got acoustic lofi tracks, Rock/Intense got Storm Runner and Iron Tide. Results matched what I'd expect as a listener. No numeric metrics since the catalog is too small for that.
 
-Prompts:  
+## 8. Future Work
 
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
+- Fuzzy genre matching ("indie pop" treated as similar to "pop")
+- Learn from listening history over time
+- Balance the dataset so every genre has 2-3+ songs
+- Let users dislike songs and adjust from that
 
----
+## 9. Personal Reflection
 
-## 5. Strengths  
-
-Where does your system seem to work well  
-
-Prompts:  
-
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
-
----
-
-## 6. Limitations and Bias 
-
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
-
----
-
-## 7. Evaluation  
-
-How you checked whether the recommender behaved as expected. 
-
-Prompts:  
-
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
-
----
-
-## 8. Future Work  
-
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
-
----
-
-## 9. Personal Reflection  
-
-A few sentences about your experience.  
-
-Prompts:  
-
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+The biggest thing I learned is that a recommender is only as good as its data and weights. The algorithm is simple math, but the choices about what to weigh more or less control what users see. It's easy to accidentally build something that works for one type of person and not another, just based on what's in the dataset.
