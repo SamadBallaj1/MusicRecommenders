@@ -1,33 +1,42 @@
 """
 Command line runner for the Music Recommender Simulation.
-
-This file helps you quickly run and test your recommender.
-
-You will implement the functions in recommender.py:
-- load_songs
-- score_song
-- recommend_songs
 """
 
-from recommender import load_songs, recommend_songs
+import os
+try:
+    from recommender import load_songs, recommend_songs, RANKING_MODES
+except ModuleNotFoundError:
+    from src.recommender import load_songs, recommend_songs, RANKING_MODES
+from tabulate import tabulate
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def print_recommendations(title, recs):
+    """Prints recommendations in a formatted table."""
+    print(f"\n{title}")
+    print("=" * len(title))
+    rows = []
+    for song, score, explanation in recs:
+        rows.append([
+            song["title"],
+            song["artist"],
+            song["genre"],
+            f"{score:.2f}",
+            explanation
+        ])
+    print(tabulate(rows, headers=["Song", "Artist", "Genre", "Score", "Why"], tablefmt="grid"))
 
 
 def main() -> None:
-    songs = load_songs("data/songs.csv") 
+    songs = load_songs(os.path.join(BASE_DIR, "data", "songs.csv"))
+    print(f"Loaded {len(songs)} songs\n")
 
-    # Starter example profile
-    user_prefs = {"genre": "pop", "mood": "happy", "energy": 0.8}
+    # Default profile
+    user_prefs = {"genre": "pop", "mood": "happy", "energy": 0.8, "danceability": 0.8, "valence": 0.8, "likes_acoustic": False}
 
-    recommendations = recommend_songs(user_prefs, songs, k=5)
-
-    print("\nTop recommendations:\n")
-    for rec in recommendations:
-        # You decide the structure of each returned item.
-        # A common pattern is: (song, score, explanation)
-        song, score, explanation = rec
-        print(f"{song['title']} - Score: {score:.2f}")
-        print(f"Because: {explanation}")
-        print()
+    recs = recommend_songs(user_prefs, songs, k=5)
+    print_recommendations("Top 5 for Pop/Happy listener", recs)
 
 
 if __name__ == "__main__":
