@@ -105,66 +105,78 @@ def load_songs(csv_path: str) -> List[Dict]:
             songs.append(row)
     return songs
 
-def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
-    """Scores a single song against user preferences."""
+RANKING_MODES = {
+    "balanced":       {"genre": 2.0, "mood": 1.5, "energy": 1.0, "danceability": 0.5, "valence": 0.5, "acoustic": 0.5, "popularity": 0.3, "mood_tag": 0.5},
+    "genre-first":    {"genre": 4.0, "mood": 1.0, "energy": 0.5, "danceability": 0.3, "valence": 0.3, "acoustic": 0.3, "popularity": 0.2, "mood_tag": 0.3},
+    "mood-first":     {"genre": 1.0, "mood": 4.0, "energy": 0.5, "danceability": 0.5, "valence": 0.8, "acoustic": 0.5, "popularity": 0.2, "mood_tag": 1.0},
+    "energy-focused": {"genre": 1.0, "mood": 0.5, "energy": 3.0, "danceability": 1.0, "valence": 0.3, "acoustic": 0.2, "popularity": 0.2, "mood_tag": 0.2},
+}
+
+def score_song(user_prefs: Dict, song: Dict, mode: str = "balanced") -> Tuple[float, List[str]]:
+    """Scores a single song against user preferences using the given ranking mode."""
+    weights = RANKING_MODES.get(mode, RANKING_MODES["balanced"])
     score = 0.0
     reasons = []
 
-    # Genre match: +2.0
+    # Genre match
     if song.get("genre", "").lower() == user_prefs.get("genre", "").lower():
-        score += 2.0
-        reasons.append("genre match (+2.0)")
+        pts = weights["genre"]
+        score += pts
+        reasons.append(f"genre match (+{pts})")
 
-    # Mood match: +1.5
+    # Mood match
     if song.get("mood", "").lower() == user_prefs.get("mood", "").lower():
-        score += 1.5
-        reasons.append("mood match (+1.5)")
+        pts = weights["mood"]
+        score += pts
+        reasons.append(f"mood match (+{pts})")
 
-    # Energy closeness: up to +1.0 (closer = higher)
+    # Energy closeness
     if "energy" in user_prefs and "energy" in song:
         energy_diff = abs(user_prefs["energy"] - song["energy"])
-        energy_score = round(1.0 - energy_diff, 2)
-        score += energy_score
-        reasons.append(f"energy closeness (+{energy_score})")
+        pts = round(weights["energy"] * (1.0 - energy_diff), 2)
+        score += pts
+        reasons.append(f"energy closeness (+{pts})")
 
-    # Danceability closeness: up to +0.5
+    # Danceability closeness
     if "danceability" in user_prefs and "danceability" in song:
         dance_diff = abs(user_prefs["danceability"] - song["danceability"])
-        dance_score = round(0.5 * (1.0 - dance_diff), 2)
-        score += dance_score
-        reasons.append(f"danceability closeness (+{dance_score})")
+        pts = round(weights["danceability"] * (1.0 - dance_diff), 2)
+        score += pts
+        reasons.append(f"danceability closeness (+{pts})")
 
-    # Valence closeness: up to +0.5
+    # Valence closeness
     if "valence" in user_prefs and "valence" in song:
         val_diff = abs(user_prefs["valence"] - song["valence"])
-        val_score = round(0.5 * (1.0 - val_diff), 2)
-        score += val_score
-        reasons.append(f"valence closeness (+{val_score})")
+        pts = round(weights["valence"] * (1.0 - val_diff), 2)
+        score += pts
+        reasons.append(f"valence closeness (+{pts})")
 
-    # Acoustic preference: +0.5 if user likes acoustic and song is acoustic
+    # Acoustic preference
     if user_prefs.get("likes_acoustic") and song.get("acousticness", 0) > 0.6:
-        score += 0.5
-        reasons.append("acoustic preference (+0.5)")
+        pts = weights["acoustic"]
+        score += pts
+        reasons.append(f"acoustic preference (+{pts})")
 
-    # Popularity bonus: up to +0.3 based on popularity score
+    # Popularity bonus
     if "popularity" in song:
-        pop_score = round(0.3 * (song["popularity"] / 100), 2)
-        score += pop_score
-        reasons.append(f"popularity bonus (+{pop_score})")
+        pts = round(weights["popularity"] * (song["popularity"] / 100), 2)
+        score += pts
+        reasons.append(f"popularity bonus (+{pts})")
 
-    # Mood tag match: +0.5
+    # Mood tag match
     if user_prefs.get("mood_tag") and song.get("mood_tag", "").lower() == user_prefs["mood_tag"].lower():
-        score += 0.5
-        reasons.append("mood tag match (+0.5)")
+        pts = weights["mood_tag"]
+        score += pts
+        reasons.append(f"mood tag match (+{pts})")
 
     score = round(score, 2)
     return (score, reasons)
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
+def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, mode: str = "balanced") -> List[Tuple[Dict, float, str]]:
     """Scores all songs and returns the top k sorted by score."""
     scored = []
     for song in songs:
-        score, reasons = score_song(user_prefs, song)
+        score, reasons = score_song(user_prefs, song, mode=mode)
         explanation = ", ".join(reasons)
         scored.append((song, score, explanation))
     scored.sort(key=lambda x: x[1], reverse=True)
