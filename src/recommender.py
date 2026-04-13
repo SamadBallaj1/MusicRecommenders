@@ -172,7 +172,7 @@ def score_song(user_prefs: Dict, song: Dict, mode: str = "balanced") -> Tuple[fl
     score = round(score, 2)
     return (score, reasons)
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, mode: str = "balanced") -> List[Tuple[Dict, float, str]]:
+def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, mode: str = "balanced", diversity: bool = False) -> List[Tuple[Dict, float, str]]:
     """Scores all songs and returns the top k sorted by score."""
     scored = []
     for song in songs:
@@ -180,4 +180,29 @@ def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, mode: str =
         explanation = ", ".join(reasons)
         scored.append((song, score, explanation))
     scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:k]
+
+    if not diversity:
+        return scored[:k]
+
+    # Pick top results while penalizing repeated artists/genres
+    results = []
+    seen_artists = []
+    seen_genres = []
+    for song, score, explanation in scored:
+        penalty = 0.0
+        penalty_reasons = []
+        if song["artist"] in seen_artists:
+            penalty += 1.0
+            penalty_reasons.append("repeat artist (-1.0)")
+        if song["genre"] in seen_genres:
+            penalty += 0.5
+            penalty_reasons.append("repeat genre (-0.5)")
+        adjusted = round(score - penalty, 2)
+        if penalty_reasons:
+            explanation += ", " + ", ".join(penalty_reasons)
+        results.append((song, adjusted, explanation))
+        seen_artists.append(song["artist"])
+        seen_genres.append(song["genre"])
+
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results[:k]
